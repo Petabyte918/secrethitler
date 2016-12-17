@@ -1,0 +1,76 @@
+<head>
+  <title>secret hitler</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+</head>
+
+<body>
+  <center>
+    <h1>secret hitler</h1>
+
+    {{> main }}
+  </center>
+</body>
+
+<template name="main">
+  <div class="main-content">
+    {{> Template.dynamic template=view }}
+    <hr />
+    {{> footer }}
+  </div>
+</template>
+
+<template name="startmenu">
+  <p style="width:75%">The year is 1932. The place is pre-WWII Germany. In Secret Hitler, players are German politicians attempting to hold a fragile Liberal government together and stem the rising tide of Fascism. Watch out though—there are secret Fascists among you, and one player is the Secret Hitler.</p>
+  <button id="newgame-btn">new game</button>
+  <button id="joingame-btn">join game</button>
+</template>
+
+<template name="newgame">
+  <form id="newgame-form">
+    {{> flashMessages }}
+    <p>
+      <input type="text" autocomplete="off" name="name" placeholder="what's your name?" />
+    </p>
+    <p>
+      <button type="submit">create game</button>
+      <button type="button" class="back-btn">back to menu</button>
+    </p>
+  </form>
+</template>
+
+<template name="joingame">
+  <form id="joingame-form">
+    {{> flashMessages }}
+    <p>
+      <input type="text" autocomplete="off" name="code" maxlength="6" placeholder="access code" /><br />
+      <input type="text" autocomplete="off" name="name" placeholder="what's your name?" />
+    </p>
+    <p>
+      <button type="submit">join game</button>
+      <button type="button" class="back-btn">back to menu</button>
+    </p>
+  </form>
+</template>
+
+<template name="lobby">
+  <p>waiting for players...</p>
+  <p>access code: <b>{{ room.accessCode }}</b></p>
+
+  <ul class="playerlist">
+    {{# each players }}
+      <li>{{ name }}</li>
+    {{/ each }}
+  </ul>
+
+  <p>
+    <button id="start-btn">start</button>
+    <button id="quit-btn">quit</button>
+  </p>
+</template>
+
+<template name="footer">
+  <div class="footer">
+    secret hitler by <a href="http://maxistentialism.com/secrethitler/" target="_blank">maxistentialism</a><br />
+    based on <a href="https://github.com/evanbrumley/spyfall" target="_blank">spyfall</a>
+  </div>
+</template>
