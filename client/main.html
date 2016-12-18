@@ -56,21 +56,41 @@
   <p>waiting for players...</p>
   <p>access code: <b>{{ room.accessCode }}</b></p>
 
+  {{ players.length }} player(s) connected
   <ul class="playerlist">
     {{# each players }}
-      <li>{{ name }}</li>
+      <li class="{{# if current }}current{{/ if }}">
+        {{ name }}
+        <a class="remove-btn" data-pid="{{ _id }}">&times;</a>
+      </li>
     {{/ each }}
   </ul>
 
   <p>
-    <button id="start-btn">start</button>
+    {{# if owner }}
+      <button id="start-btn" {{ ready players }}>start</button>
+    {{/ if }}
     <button id="quit-btn">quit</button>
   </p>
+</template>
+
+<template name="seating">
+  <h2>You're <b>{{ role }}</b>!</h2>
+  <p>Sit in a circle. Pick someone to start, and hit "ready" in order, <b>clockwise</b>.</p>
+
+  <p>
+    <button id="ready-btn" {{ canready }}>ready</button>
+  </p>
+  <ul class="circle-container-{{ players.length }}">
+    {{# each players }}
+      <li><span>{{ name }}</span></li>
+    {{/ each }}
+  </ul>
 </template>
 
 <template name="footer">
   <div class="footer">
     secret hitler by <a href="http://maxistentialism.com/secrethitler/" target="_blank">maxistentialism</a><br />
-    based on <a href="https://github.com/evanbrumley/spyfall" target="_blank">spyfall</a>
+    made by <a href="https://michaelz.xyz" target="_blank">michael zhang</a> &middot; based on <a href="https://github.com/evanbrumley/spyfall" target="_blank">spyfall</a>
   </div>
 </template>
