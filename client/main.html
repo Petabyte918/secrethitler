@@ -4,11 +4,8 @@
 </head>
 
 <body>
-  <center>
-    <h1>secret hitler</h1>
-
-    {{> main }}
-  </center>
+  <h1>secret hitler</h1>
+  <hr>
 </body>
 
 <template name="main">
@@ -54,7 +51,10 @@
 
 <template name="lobby">
   <p>waiting for players...</p>
-  <p>access code: <b>{{ room.accessCode }}</b></p>
+  <p>
+    access code: <b>{{ room.accessCode }}</b><br />
+    share this <a href="/{{ room.accessCode }}" target="_blank">link</a>
+  </p>
 
   {{ players.length }} player(s) connected
   <ul class="playerlist">
@@ -84,6 +84,27 @@
   <ul class="circle-container-{{ players.length }}">
     {{# each players }}
       <li><span>{{ name }}</span></li>
+    {{/ each }}
+  </ul>
+</template>
+
+<template name="game">
+  <h2>Round <b>{{ round }}</b></h2>
+  {{# if president }}
+    <p>
+      <b style="color: #099;">You are the president!</b><br />
+      {{# if picking }}
+        <span style="color: #909;">Choose your chancellor:</span>
+      {{/ if }}
+    </p>
+  {{ else }}
+    {{# if picking }}
+      <p>waiting for the president...</p>
+    {{/ if }}
+  {{/ if }}
+  <ul class="ring circle-container-{{ players.length }}">
+    {{# each players }}
+      <li data-pid={{ pid }}><span class={{ playercircle pid }}>{{ name }}</span></li>
     {{/ each }}
   </ul>
 </template>

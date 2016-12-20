@@ -25,7 +25,8 @@ Tracker.autorun(function roomstate() {
 
     Session.set("view", {
         "lobby": "lobby",
-        "seating": "seating"
+        "seating": "seating",
+        "ongoing": "game"
     }[room.state] || null);
 });
 
@@ -82,11 +83,18 @@ Template.joingame.events({
 
         code = code.trim().toUpperCase();
         Meteor.subscribe("rooms", code, function() {
-            var room = Rooms.findOne({ accessCode: code });
+            var room = Rooms.findOne({
+                accessCode: code
+            });
             if (!room)
                 return FlashMessages.sendError("Invalid access code.");
             if (room.state !== "lobby")
                 return FlashMessages.sendError("Game has already started!");
+            if (Players.find({
+                    rid: room._id,
+                    name: name
+                }).count() > 0)
+                return FlashMessages.sendError("Someone already took that name!");
             Meteor.subscribe("players", room._id);
             Meteor.call("joingame", {
                 name: name,
@@ -104,15 +112,25 @@ Template.joingame.events({
     }
 });
 
+Template.joingame.rendered = function() {
+    var code = Session.get("code");
+    if (code) {
+        $("input[name=code]").val(code);
+    }
+}
+
 Template.lobby.events({
     "click .remove-btn": function(event) {
         var pid = $(event.currentTarget).data("pid");
-        console.log(pid);
-        Meteor.call("leavegame", { pid: pid })
+        Meteor.call("leavegame", {
+            pid: pid
+        })
     },
     "click #start-btn": function() {
         var rid = Session.get("rid");
-        Meteor.call("startgame", { rid: rid });
+        Meteor.call("startgame", {
+            rid: rid
+        });
     },
     "click #quit-btn": function() {
         var pid = Session.get("pid");
@@ -141,7 +159,9 @@ Template.lobby.helpers({
         var room = Rooms.findOne(rid);
         if (!room)
             return null;
-        return Players.find({ rid: rid }).fetch().map(function(player) {
+        return Players.find({
+            rid: rid
+        }).fetch().map(function(player) {
             player.current = player._id == pid;
             return player;
         });
@@ -153,7 +173,7 @@ Template.lobby.helpers({
         return pid == room.owner;
     },
     ready: function(players) {
-        var attributes = { };
+        var attributes = {};
         if (!(players.length >= 5 || players.length == 2)) {
             attributes.disabled = false;
         }
@@ -163,7 +183,9 @@ Template.lobby.helpers({
 
 Template.seating.events({
     "click #ready-btn": function() {
-        Meteor.call("ready", { pid: pid }, (err) => {
+        Meteor.call("ready", {
+            pid: pid
+        }, (err) => {
             if (err)
                 console.error(err);
         });
@@ -177,8 +199,8 @@ Template.seating.helpers({
         var player = Players.findOne(pid);
         var room = Rooms.findOne(player.rid);
         if (room.players.filter(function(player) {
-            return player.pid == pid;
-        }).length > 0) {
+                return player.pid == pid;
+            }).length > 0) {
             attributes["disabled"] = true;
         }
         return attributes;
@@ -196,5 +218,53 @@ Template.seating.helpers({
         var rid = Session.get("rid");
         var room = Rooms.findOne(rid);
         return room.players;
+    }
+});
+
+Template.game.events({
+    "click ul.ring > li": function(event) {
+        var pid = $(event.currentTarget).data("pid");
+        var current_pid = Session.get("pid");
+        var rid = Session.get("rid");
+        var room = Rooms.findOne(rid);
+        console.log(pid);
+        if (room.players[room.current_president].pid == current_pid) {
+            if (room.current_chancellor == -1) {
+                Meteor.call("pickchancellor", pid);
+            }
+        }
+    }
+});
+
+Template.game.helpers({
+    round: function() {
+        var room = Rooms.findOne(rid);
+        return room.round;
     },
+    players: function() {
+        var rid = Session.get("rid");
+        var room = Rooms.findOne(rid);
+        return room.players;
+    },
+    playercircle: function(pid) {
+        var current_pid = Session.get("pid");
+        var rid = Session.get("rid");
+        var room = Rooms.findOne(rid);
+        if (room.players[room.current_president].pid == pid)
+            return "president";
+        if (room.players[room.current_president].pid == current_pid && room.current_chancellor == -1) {
+            return "chancellor-candidate";
+        }
+    },
+    picking: function() {
+        var rid = Session.get("rid");
+        var room = Rooms.findOne(rid);
+        return room.current_chancellor == -1;
+    },
+    president: function() {
+        var pid = Session.get("pid");
+        var rid = Session.get("rid");
+        var room = Rooms.findOne(rid);
+        return room.players[room.current_president].pid == pid;
+    }
 });
