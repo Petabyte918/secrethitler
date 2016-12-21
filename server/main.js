@@ -184,14 +184,24 @@ Meteor.methods({
                 return value ? "true" : "false";
             }).true > (_.size(room.players) / 2) ? 1 : -1;
             if (update.voteresult == 1) {
-                var drawpile = room.drawpile;
-                if (drawpile.length < 3) {
-                    drawpile = drawpile.concat(room.discardpile);
-                    update.discardpile = [];
+                if (room.fascist >= 3 && room.players[room.current_chancellor].role == "hitler") {
+                    update.state = "gameover";
+                    update.winner = "fascists";
+                    update.reason = "hitler has been elected!";
+                    update.players = room.players;
+                    for (var i = 0; i < room.players.length; i += 1) {
+                        update.players[i].side = Players.findOne(room.players[i].pid).role;
+                    }
+                } else {
+                    var drawpile = room.drawpile;
+                    if (drawpile.length < 3) {
+                        drawpile = drawpile.concat(room.discardpile);
+                        update.discardpile = [];
+                    }
+                    _.shuffle(drawpile);
+                    update.choices = drawpile.splice(0, 3);
+                    update.drawpile = drawpile;
                 }
-                _.shuffle(drawpile);
-                update.choices = drawpile.splice(0, 3);
-                update.drawpile = drawpile;
             }
         }
         Rooms.update(player.rid, {
