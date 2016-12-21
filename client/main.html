@@ -90,6 +90,13 @@
 
 <template name="game">
   <h2>Round <b>{{ round }}</b></h2>
+  <p>
+    <small>Policy Count</small><br />
+    <span style="font-size: 2em;">
+      {{ room.liberal }} / {{ room.fascist }}
+    </span><br />
+    <small>liberal / fascist</small>
+  </p>
   {{# if president }}
     <p>
       <b style="color: #099;">You are the president!</b><br />
@@ -100,6 +107,63 @@
   {{ else }}
     {{# if picking }}
       <p>waiting for the president...</p>
+    {{/ if }}
+  {{/ if }}
+  {{# if chancellor }}
+    <p>
+      <b style="color: #909;">You are the chancellor!</b><br />
+    </p>
+  {{/ if }}
+  {{# if voting }}
+    <p>
+      voting.. waiting for {{ votesleft }} {{# if plural votesleft }}people{{ else }}person{{/ if }}<br />
+      {{# if haventvoted }}
+        <button id="voteyes-btn">yes</button>
+        <button id="voteno-btn">no</button>
+      {{/ if }}
+    </p>
+  {{/ if }}
+  {{# if votefailed }}
+    <p>
+      the vote failed...<br />
+      waiting on {{ votecount }} {{# if plural votecount }}people{{ else }}person{{/ if }}
+    </p>
+    {{# unless haventvoted }}
+      <p><button id="fail-continue-btn">continue</button></p>
+    {{/ unless }}
+  {{/ if }}
+  {{# if votepassed }}
+    {{# if equals room.choices.length 3 }}
+      <p>the vote passed!</p>
+    {{/ if }}
+    {{# if president }}
+      {{# if equals room.choices.length 3 }}
+        <p>choose a policy to discard</p>
+        <p>
+          {{# each policy in room.choices }}
+            <button id="pick-{{ policy }}-btn">{{ policy }}</button>
+          {{/ each }}
+        </p>
+      {{ else }}
+        <p>waiting for the chancellor...</p>
+      {{/ if }}
+    {{ else }}
+      {{# if chancellor }}
+        {{# if equals room.choices.length 2 }}
+          <p>choose a policy to discard</p>
+          <p>
+            {{# each policy in room.choices }}
+              <button id="pick-{{ policy }}-btn">{{ policy }}</button>
+            {{/ each }}
+          </p>
+        {{/ if }}
+      {{ else }}
+        {{# if equals room.choices.length 3 }}
+          <p>waiting for the president...</p>
+        {{ else }}
+          <p>waiting for the chancellor...</p>
+        {{/ if }}
+      {{/ if }}
     {{/ if }}
   {{/ if }}
   <ul class="ring circle-container-{{ players.length }}">

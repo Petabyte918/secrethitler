@@ -1,24 +1,11 @@
 import {
     Meteor
 } from "meteor/meteor";
+import {
+    Random
+} from "meteor/random";
 
-var generateString = function(length, possible) {
-    length = length || 5;
-    possible = possible || "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    var text = "";
-    for (var i = 0; i < length; i++)
-        text += possible.charAt(Math.floor(Math.random() * possible.length));
-    return text;
-};
-
-var shuffle = function(array) {
-    var a = array.slice(0);
-    for (let i = a.length; i; i--) {
-        let j = Math.floor(Math.random() * i);
-        [a[i - 1], a[j]] = [a[j], a[i - 1]];
-    }
-    return a;
-};
+var deck = ["fascist", "fascist", "fascist", "fascist", "fascist", "fascist", "fascist", "fascist", "fascist", "fascist", "fascist", "liberal", "liberal", "liberal", "liberal", "liberal", "liberal"];
 
 var roleCards = {
     2: ["hitler", "liberal"],
@@ -36,12 +23,12 @@ Meteor.methods({
     "newgame" ({
         name
     }) {
-        var accessCode = generateString(6);
+        var accessCode = Random.hexString(6);
         name = name.trim();
         while (Rooms.find({
                 accessCode: accessCode
             }).count() > 0) {
-            accessCode = generateString(6);
+            accessCode = Random.hexString(6);
         }
         var rid = Rooms.insert({
             accessCode: accessCode,
@@ -91,7 +78,7 @@ Meteor.methods({
         var players = Players.find({
             rid: rid
         }).fetch();
-        var roles = shuffle(roleCards[players.length]);
+        var roles = _.shuffle(roleCards[players.length]);
         players.forEach(function(player, index) {
             Players.update(player._id, {
                 $set: {
@@ -116,6 +103,7 @@ Meteor.methods({
             }).length > 0) {
             return;
         }
+        var index = room.players.length;
         room.players.push({
             pid: player._id,
             name: player.name
@@ -126,11 +114,135 @@ Meteor.methods({
         if (Players.find({
                 rid: room._id
             }).count() == room.players.length) {
-            update["state"] = "ongoing";
-            update["round"] = 1;
-            update["started"] = new Date().getTime();
-            update["current_president"] = Math.floor(Math.random() * room.players.length);
-            update["current_chancellor"] = -1;
+            update.state = "ongoing";
+            update.drawpile = _.shuffle(deck);
+            update.discardpile = [];
+            update.choices = [];
+            update.round = 1;
+            update.started = new Date().getTime();
+            update.voted = false;
+            update.votes = {};
+            update.voteresult = 0;
+            update.current_president = Math.floor(Math.random() * room.players.length);
+            update.current_chancellor = -1;
+            update.ruledout = [];
+            update.liberal = 0;
+            update.fascist = 0;
+        }
+        Players.update(pid, {
+            $set: {
+                index: index
+            }
+        })
+        Rooms.update(player.rid, {
+            $set: update
+        });
+    },
+    "pickchancellor" ({
+        pid
+    }) {
+        var player = Players.findOne(pid);
+        if (!player)
+            return;
+        var room = Rooms.findOne(player.rid);
+        if (room.current_chancellor > -1)
+            return;
+        if (player.index == room.current_president)
+            return;
+        if (_.contains(room.ruledout, player._id))
+            return;
+        Rooms.update(player.rid, {
+            $set: {
+                current_chancellor: player.index
+            }
+        });
+    },
+    "vote" ({
+        pid,
+        vote
+    }) {
+        var player = Players.findOne(pid);
+        var room = Rooms.findOne(player.rid);
+        var update = {
+            votes: room.votes
+        };
+        update.votes[pid] = vote;
+        if (_.size(update.votes) == _.size(room.players)) {
+            update.voted = true;
+            update.voteresult = _.countBy(_.values(update.votes), (value) => {
+                return value ? "true" : "false";
+            }).true > (_.size(room.players) / 2) ? 1 : -1;
+            if (update.voteresult == 1) {
+                var drawpile = room.drawpile;
+                if (drawpile.length < 3) {
+                    drawpile = drawpile.concat(room.discardpile);
+                    update.discardpile = [];
+                }
+                _.shuffle(drawpile);
+                update.choices = drawpile.splice(0, 3);
+                update.drawpile = drawpile;
+            }
+        }
+        Rooms.update(player.rid, {
+            $set: update
+        });
+    },
+    "failcontinue" ({
+        pid
+    }) {
+        var player = Players.findOne(pid);
+        if (!player)
+            return;
+        var room = Rooms.findOne(player.rid);
+        var update = {
+            votes: room.votes
+        };
+        delete update.votes[pid];
+        if (_.size(update.votes) == 0) {
+            update.round = room.round + 1;
+            update.voted = false;
+            update.votes = {};
+            update.voteresult = 0;
+            update.ruledout = [room.players[room.current_president].pid, room.players[room.current_chancellor].pid];
+            update.current_president = (room.current_president + 1) % _.size(room.players);
+            update.current_chancellor = -1;
+        }
+        Rooms.update(player.rid, {
+            $set: update
+        });
+    },
+    "discard" ({
+        pid,
+        card
+    }) {
+        var player = Players.findOne(pid);
+        if (!player)
+            return;
+        var room = Rooms.findOne(player.rid);
+        if (!(card == "liberal" || card == "fascist"))
+            return;
+        if ((room.choices.length == 3 && room.players[room.current_president].pid != pid) || (room.choices.length == 2 && room.players[room.current_chancellor].pid != pid))
+            return;
+        var index = room.choices.indexOf(card);
+        room.choices.splice(index, 1);
+        var update = {
+            choices: room.choices,
+            discardpile: room.discardpile.concat([card])
+        };
+        if (room.choices.length == 1) {
+            console.log(room.choices);
+            if (room.choices[0] == "liberal")
+                update.liberal = room.liberal + 1;
+            else if (room.choices[0] == "fascist")
+                update.fascist = room.fascist + 1;
+            update.round = room.round + 1;
+            update.choices = [];
+            update.voted = false;
+            update.votes = {};
+            update.voteresult = 0;
+            update.ruledout = [room.players[room.current_president].pid, room.players[room.current_chancellor].pid];
+            update.current_president = (room.current_president + 1) % _.size(room.players);
+            update.current_chancellor = -1;
         }
         Rooms.update(player.rid, {
             $set: update

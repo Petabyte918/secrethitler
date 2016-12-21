@@ -81,7 +81,7 @@ Template.joingame.events({
         if (!name)
             return false;
 
-        code = code.trim().toUpperCase();
+        code = code.trim().toLowerCase();
         Meteor.subscribe("rooms", code, function() {
             var room = Rooms.findOne({
                 accessCode: code
@@ -227,19 +227,63 @@ Template.game.events({
         var current_pid = Session.get("pid");
         var rid = Session.get("rid");
         var room = Rooms.findOne(rid);
-        console.log(pid);
         if (room.players[room.current_president].pid == current_pid) {
             if (room.current_chancellor == -1) {
-                Meteor.call("pickchancellor", pid);
+                Meteor.call("pickchancellor", {
+                    pid: pid
+                });
             }
         }
+    },
+    "click #voteyes-btn": function() {
+        var pid = Session.get("pid");
+        Meteor.call("vote", {
+            pid: pid,
+            vote: true
+        });
+    },
+    "click #voteno-btn": function() {
+        var pid = Session.get("pid");
+        Meteor.call("vote", {
+            pid: pid,
+            vote: false
+        });
+    },
+    "click #fail-continue-btn": function() {
+        var pid = Session.get("pid");
+        Meteor.call("failcontinue", {
+            pid: pid,
+            vote: false
+        });
+    },
+    "click #pick-fascist-btn": function() {
+        var pid = Session.get("pid");
+        Meteor.call("discard", {
+            pid: pid,
+            card: "fascist"
+        });
+    },
+    "click #pick-liberal-btn": function() {
+        var pid = Session.get("pid");
+        Meteor.call("discard", {
+            pid: pid,
+            card: "liberal"
+        });
     }
 });
 
 Template.game.helpers({
+    equals: function(a, b) {
+        return a == b;
+    },
     round: function() {
         var room = Rooms.findOne(rid);
         return room.round;
+    },
+    room: function() {
+        var rid = Session.get("rid");
+        var room = Rooms.findOne(rid);
+        return room;
     },
     players: function() {
         var rid = Session.get("rid");
@@ -252,19 +296,61 @@ Template.game.helpers({
         var room = Rooms.findOne(rid);
         if (room.players[room.current_president].pid == pid)
             return "president";
-        if (room.players[room.current_president].pid == current_pid && room.current_chancellor == -1) {
+        if (room.players[room.current_president].pid == current_pid && room.current_chancellor == -1 && !_.contains(room.ruledout, pid))
             return "chancellor-candidate";
-        }
+        if (room.current_chancellor > -1 && room.players[room.current_chancellor].pid == pid)
+            return "chancellor";
     },
     picking: function() {
         var rid = Session.get("rid");
         var room = Rooms.findOne(rid);
         return room.current_chancellor == -1;
     },
+    voting: function() {
+        var pid = Session.get("pid");
+        var rid = Session.get("rid");
+        var room = Rooms.findOne(rid);
+        return room.current_president > -1 && room.current_chancellor > -1 && !room.voted;
+    },
+    haventvoted: function() {
+        var pid = Session.get("pid");
+        var rid = Session.get("rid");
+        var room = Rooms.findOne(rid);
+        return !(pid in room.votes);
+    },
+    votecount: function() {
+        var rid = Session.get("rid");
+        var room = Rooms.findOne(rid);
+        return _.size(room.votes);
+    },
+    votesleft: function() {
+        var rid = Session.get("rid");
+        var room = Rooms.findOne(rid);
+        return _.size(room.players) - _.size(room.votes);
+    },
+    votepassed: function() {
+        var rid = Session.get("rid");
+        var room = Rooms.findOne(rid);
+        return room.voteresult == 1;
+    },
+    votefailed: function() {
+        var rid = Session.get("rid");
+        var room = Rooms.findOne(rid);
+        return room.voteresult == -1;
+    },
     president: function() {
         var pid = Session.get("pid");
         var rid = Session.get("rid");
         var room = Rooms.findOne(rid);
         return room.players[room.current_president].pid == pid;
+    },
+    chancellor: function() {
+        var pid = Session.get("pid");
+        var rid = Session.get("rid");
+        var room = Rooms.findOne(rid);
+        return room.players[room.current_chancellor].pid == pid;
+    },
+    plural: function(obj) {
+        return obj != 1;
     }
 });

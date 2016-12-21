@@ -6,6 +6,8 @@
 }
 
 body {
+	padding-left: calc(50% - 190px);
+	padding-right: calc(50% - 190px);
 	display: block;
 	text-align: center;
 	text-align: -webkit-center;
@@ -144,12 +146,16 @@ div.footer {
 			border-radius: 50%;
 			border: solid 5px #ccc;
 			transition: all .1s ease-out;
+			cursor: pointer;
 
 			&.president {
 				border-color: #099;
 			}
 			&.chancellor-candidate {
 				border-color: lighten(#909, 50%);
+			}
+			&.chancellor {
+				border-color: #909;
 			}
 		}
 	}
