@@ -78,6 +78,7 @@ Meteor.methods({
         var players = Players.find({
             rid: rid
         }).fetch();
+        var fascists = [];
         var roles = _.shuffle(roleCards[players.length]);
         players.forEach(function(player, index) {
             Players.update(player._id, {
@@ -85,11 +86,20 @@ Meteor.methods({
                     role: roles[index]
                 }
             });
+            if (roles[index] == "fascist" || roles[index] == "hitler") {
+                fascists.push({
+                    name: player.name,
+                    pid: player._id,
+                    hitler: roles[index] == "hitler"
+                });
+            }
         });
         Rooms.update(rid, {
             $set: {
                 state: "seating",
-                players: []
+                players: [],
+                teamfascist: fascists,
+                size: players.length
             }
         });
     },
@@ -106,7 +116,8 @@ Meteor.methods({
         var index = room.players.length;
         room.players.push({
             pid: player._id,
-            name: player.name
+            name: player.name,
+            role: player.role
         });
         var update = {
             players: room.players
@@ -243,6 +254,20 @@ Meteor.methods({
             update.ruledout = [room.players[room.current_president].pid, room.players[room.current_chancellor].pid];
             update.current_president = (room.current_president + 1) % _.size(room.players);
             update.current_chancellor = -1;
+            if (update.liberal == 5 || update.fascist == 6) {
+                update.state = "gameover";
+                if (update.liberal == 5) {
+                    update.winner = "liberals";
+                    update.reason = "liberals have passed 5 policies!";
+                } else if (update.fascist == 6) {
+                    update.winner = "fascists";
+                    update.reason = "fascists have passed 6 policies!";
+                }
+                update.players = room.players;
+                for (var i = 0; i < room.players.length; i += 1) {
+                    update.players[i].side = Players.findOne(room.players[i].pid).role;
+                }
+            }
         }
         Rooms.update(player.rid, {
             $set: update

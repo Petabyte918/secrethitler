@@ -102,6 +102,11 @@ div.footer {
 	}
 }
 
+.policy-count td {
+	padding: 0 9px;
+	margin: 0;
+}
+
 @mixin on-circle($item-count, $circle-size, $item-size) {  
 	position: relative;
 	width:  $circle-size;

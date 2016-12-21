@@ -75,8 +75,24 @@
 </template>
 
 <template name="seating">
-  <h2>You're <b>{{ role }}</b>!</h2>
-  <p>Sit in a circle. Pick someone to start, and hit "ready" in order, <b>clockwise</b>.</p>
+  <h2>you're <b>{{ role }}</b>!</h2>
+  {{ teammates }} {{ teammates.length }}
+  {{# if teammates }}
+    <p>
+      these are your fellow fascists:
+      <ul class="playerlist">
+        {{# each teammates }}
+          <li class="{{# if equals pid player._id }}current{{/ if }}">
+            {{ name }}
+            {{# if hitler }}
+              (hitler)
+            {{/ if }}
+          </li>
+        {{/ each }}
+      </ul>
+    </p>
+  {{/ if }}
+  <p>sit in a circle. pick someone to start, and hit "ready" in order, <b>clockwise</b>.</p>
 
   <p>
     <button id="ready-btn" {{ canready }}>ready</button>
@@ -92,16 +108,32 @@
   <h2>Round <b>{{ round }}</b></h2>
   <p>
     <small>Policy Count</small><br />
-    <span style="font-size: 2em;">
-      {{ room.liberal }} / {{ room.fascist }}
-    </span><br />
-    <small>liberal / fascist</small>
+    <table class="policy-count">
+      <tr>
+        <td>
+          <span style="font-size:2.0em;">{{ room.liberal }}</span>
+          /5
+        </td>
+        <td>
+          <span style="font-size:2.0em;">{{ room.fascist }}</span>
+          /6
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <small>liberal</small>
+        </td>
+        <td>
+          <small>fascist</small>
+        </td>
+      </tr>
+    </table>
   </p>
   {{# if president }}
     <p>
-      <b style="color: #099;">You are the president!</b><br />
+      <b style="color: #099;">you are the president!</b><br />
       {{# if picking }}
-        <span style="color: #909;">Choose your chancellor:</span>
+        <span style="color: #909;">choose your chancellor:</span>
       {{/ if }}
     </p>
   {{ else }}
@@ -111,7 +143,7 @@
   {{/ if }}
   {{# if chancellor }}
     <p>
-      <b style="color: #909;">You are the chancellor!</b><br />
+      <b style="color: #909;">you are the chancellor!</b><br />
     </p>
   {{/ if }}
   {{# if voting }}
@@ -169,6 +201,21 @@
   <ul class="ring circle-container-{{ players.length }}">
     {{# each players }}
       <li data-pid={{ pid }}><span class={{ playercircle pid }}>{{ name }}</span></li>
+    {{/ each }}
+  </ul>
+</template>
+
+<template name="gameover">
+  <h2>game over!</h2>
+  <p>
+    winning team: <b>{{ room.winner }}</b>
+  </p>
+  <ul class="playerlist">
+    {{# each players }}
+      <li class="{{# if current }}current{{/ if }}">
+        {{ name }}
+        ({{ side pid }})
+      </li>
     {{/ each }}
   </ul>
 </template>

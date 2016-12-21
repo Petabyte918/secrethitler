@@ -26,7 +26,8 @@ Tracker.autorun(function roomstate() {
     Session.set("view", {
         "lobby": "lobby",
         "seating": "seating",
-        "ongoing": "game"
+        "ongoing": "game",
+        "gameover": "gameover"
     }[room.state] || null);
 });
 
@@ -174,7 +175,7 @@ Template.lobby.helpers({
     },
     ready: function(players) {
         var attributes = {};
-        if (!(players.length >= 5 || players.length == 2)) {
+        if (players.length < 5) {
             attributes.disabled = false;
         }
         return attributes;
@@ -193,6 +194,14 @@ Template.seating.events({
 });
 
 Template.seating.helpers({
+    equals: function(a, b) {
+        return a == b;
+    },
+    player: function() {
+        var pid = Session.get("pid");
+        var player = Players.findOne(pid);
+        return player;
+    },
     canready: function() {
         var attributes = {};
         var pid = Session.get("pid");
@@ -208,16 +217,22 @@ Template.seating.helpers({
     role: function() {
         var pid = Session.get("pid");
         var player = Players.findOne(pid);
-        return {
-            "liberal": "Liberal",
-            "fascist": "Fascist",
-            "hitler": "Hitler"
-        }[player.role];
+        return player.role;
     },
     players: function() {
         var rid = Session.get("rid");
         var room = Rooms.findOne(rid);
         return room.players;
+    },
+    teammates: function() {
+        var pid = Session.get("pid");
+        var player = Players.findOne(pid);
+        var room = Rooms.findOne(player.rid);
+        if (player.role == "liberal")
+            return false;
+        if (player.role == "hitler" && (room.size >= 7 && room.size <= 10))
+            return false;
+        return room.teamfascist;
     }
 });
 
@@ -353,4 +368,17 @@ Template.game.helpers({
     plural: function(obj) {
         return obj != 1;
     }
+});
+
+Template.gameover.helpers({
+    room: function() {
+        var rid = Session.get("rid");
+        var room = Rooms.findOne(rid);
+        return room;
+    },
+    players: function() {
+        var rid = Session.get("rid");
+        var room = Rooms.findOne(rid);
+        return room.players;
+    },
 });
