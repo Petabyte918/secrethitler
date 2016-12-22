@@ -126,6 +126,8 @@ Meteor.methods({
                 rid: room._id
             }).count() == room.players.length) {
             update.state = "ongoing";
+            update.tracker = 0;
+            update.trackerfull = "";
             update.drawpile = _.shuffle(deck);
             update.discardpile = [];
             update.choices = [];
@@ -184,6 +186,7 @@ Meteor.methods({
                 return value ? "true" : "false";
             }).true > (_.size(room.players) / 2) ? 1 : -1;
             if (update.voteresult == 1) {
+                update.tracker = 0;
                 if (room.fascist >= 3 && room.players[room.current_chancellor].role == "hitler") {
                     update.state = "gameover";
                     update.winner = "fascists";
@@ -201,6 +204,18 @@ Meteor.methods({
                     _.shuffle(drawpile);
                     update.choices = drawpile.splice(0, 3);
                     update.drawpile = drawpile;
+                }
+            } else {
+                update.tracker = room.tracker + 1;
+                if (update.tracker == 3) {
+                    update.drawpile = room.drawpile;
+                    var card = update.drawpile.splice(0, 1);
+                    if (card == "liberal")
+                        update.liberal = room.liberal + 1;
+                    else if (card == "fascist")
+                        update.fascist = room.fascist + 1;
+                    update.trackerfull = `a ${card} policy has been enacted!`;
+                    update.tracker = 0;
                 }
             }
         }
@@ -220,6 +235,7 @@ Meteor.methods({
         };
         delete update.votes[pid];
         if (_.size(update.votes) == 0) {
+            update.trackerfull = "";
             update.round = room.round + 1;
             update.voted = false;
             update.votes = {};

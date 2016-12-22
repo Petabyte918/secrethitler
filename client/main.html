@@ -106,9 +106,9 @@
 </template>
 
 <template name="game">
-  <h2>Round <b>{{ round }}</b></h2>
+  <h2>round <b>{{ round }}</b></h2>
   <p>
-    <small>Policy Count</small><br />
+    <small>policy count</small><br />
     <table class="policy-count">
       <tr>
         <td>
@@ -129,6 +129,7 @@
         </td>
       </tr>
     </table>
+    failed elections: {{ room.tracker }}
   </p>
   {{# if president }}
     <p>
