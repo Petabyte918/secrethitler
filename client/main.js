@@ -76,7 +76,7 @@ Template.joingame.events({
     "click .back-btn": function() {
         Session.set("view", "startmenu");
     },
-    "submit #joingame-form": function() {
+    "submit #joingame-form": function(event) {
         var code = event.target.code.value;
         var name = event.target.name.value;
         if (!name)
@@ -109,6 +109,7 @@ Template.joingame.events({
                 Session.set("view", "lobby");
             });
         });
+        event.preventDefault();
         return false;
     }
 });
